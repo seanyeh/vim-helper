@@ -37,7 +37,7 @@ find_vim_pid() {
 }
 
 vim_launch() {
-    NVIM_LISTEN_ADDRESS="/tmp/vim-${$}" exec nvim
+    NVIM_LISTEN_ADDRESS="/tmp/vim-${$}" exec nvim "$@"
 }
 
 vim_remote() {
@@ -45,7 +45,8 @@ vim_remote() {
 }
 
 if [ "$1" = "launch" ]; then
-    vim_launch
+    shift
+    vim_launch "$@"
 elif [ "$1" = "remote" ]; then
     shift
     vim_remote "$@"
