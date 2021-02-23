@@ -1,0 +1,54 @@
+#!/bin/bash
+
+find_active_shell_pid() {
+    xdotool getactivewindow getwindowname | grep -Po '(?<=\[)\d+(?=\])'
+}
+
+# Find the child process with the given name and return its pid
+# $1: pid
+# $2: name
+# $3: current depth
+MAX_CHILD_DEPTH=5
+find_child_process() {
+    # Return pid if process is found
+    process_name=$(ps -p "$1" -o comm=)
+    [ "${process_name}" = "$2" ] && printf "$1\n" && return
+
+    # Default depth=1 if not provided
+    [ -z "$3" ] && depth=1 || depth="$3"
+
+    # Don't search past max depth
+    [ "${depth}" -gt "${MAX_CHILD_DEPTH}" ] && return
+
+    # Recursively search child processes of pid
+    for child_pid in $(pgrep -P "$1"); do
+        result=$(find_child_process "${child_pid}" "$2" $(("${depth}"+1)))
+        if [ -n "${result}" ]; then
+            printf "${result}\n" && return
+        fi
+    done
+}
+
+find_vim_pid() {
+    pid=$(find_active_shell_pid)
+    [ -z "${pid}" ] && printf "No active shell found.\n" && exit 1
+
+    find_child_process "${pid}" nvim 1
+}
+
+vim_launch() {
+    NVIM_LISTEN_ADDRESS="/tmp/vim-${$}" exec nvim
+}
+
+vim_remote() {
+    nvr --servername "/tmp/vim-$(find_vim_pid)" --nostart "$@"
+}
+
+if [ "$1" = "launch" ]; then
+    vim_launch
+elif [ "$1" = "remote" ]; then
+    shift
+    vim_remote "$@"
+else
+    find_vim_pid
+fi
