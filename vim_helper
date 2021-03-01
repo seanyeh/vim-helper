@@ -1,7 +1,18 @@
 #!/bin/bash
 
+get_active_window_title() {
+  if command -v xdotool >/dev/null; then
+    xdotool getactivewindow getwindowname
+  else
+    # temp
+    mac_active_window_title
+  fi
+}
+
 find_vim_pid() {
-    pid=$(xdotool getactivewindow getwindowname | grep -Po '(?<=\[)\d+(?=\])')
+    command -v ggrep >/dev/null && command_grep="ggrep" || command_grep="grep"
+
+    pid=$(get_active_window_title | "${command_grep}" -Po '(?<=\[)\d+(?=\])')
 
     [ -z "${pid}" ] && printf "No active shell found.\n" 1>&2 && exit 1
     printf "%s\n" "${pid}"
